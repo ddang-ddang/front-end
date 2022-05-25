@@ -1,18 +1,12 @@
 import { userActions } from "../slices/userSlice";
 import api from "../../modules/api";
 import AuthService from "../../services/auth.service";
-import TokenService from "../../services/token.service";
 
 // 토큰 확인
 export const loginCheckAxios = (token, navigate) => {
     return async function (dispatch) {
         try {
-            const response = await AuthService.auth();
-            const user = {
-                email: response.data.user.email,
-                nickname: response.data.user.nickname,
-                playerId: response.data.user.playerId,
-            };
+            const user = await AuthService.auth();
 
             dispatch(userActions.loginCheck({ user, token }));
         } catch (err) {
@@ -24,20 +18,16 @@ export const loginCheckAxios = (token, navigate) => {
 // 로그인 middleware
 export const signinAxios = (email, password, navigate) => {
     return async function (dispatch) {
-        let user = {
+        let userData = {
             email,
             password,
         };
         try {
-            const response = await AuthService.login(email, password);
+            const data = await AuthService.login(email, password);
+            const { nickname, token } = data;
+            const user = { ...userData, ...nickname };
 
-            user = { email, nickname: response.data.row.nickname };
-            TokenService.setAccessToken(response.headers["accesstoken"]);
-
-            const tokenFullString = response.headers.accesstoken;
-            const tokenArr = tokenFullString.split(" ");
-
-            dispatch(userActions.signin({ user, token: tokenArr[1] }));
+            dispatch(userActions.signin({ user, token }));
             navigate("/");
         } catch (error) {
             console.log(error);
@@ -47,10 +37,9 @@ export const signinAxios = (email, password, navigate) => {
 
 // 이메일 중복 확인
 export const checkEmailAxios = (email) => {
-    let data = { email: email };
     return async function (dispatch) {
         try {
-            await api.post("/players/dupEmail", data);
+            await api.post("/players/dupEmail", { email });
         } catch (err) {
             console.log(err);
         }
@@ -59,12 +48,11 @@ export const checkEmailAxios = (email) => {
 
 // 닉네임 중복 확인
 export const checkNickname = (nickname) => {
-    console.log(nickname);
-    let data = { nickname: nickname };
     return async function (dispatch) {
         try {
-            const response = await api.post("/players/dupNickname", data);
-            console.log(response);
+            await api.post("/players/dupNickname", {
+                nickname,
+            });
         } catch (err) {
             console.log(err);
         }
@@ -81,22 +69,26 @@ export const signupAxios = (
     navigate
 ) => {
     return async function (dispatch) {
-        AuthService.register(email, password, nickname, mbti, profileImg)
-            .then((res) => {
-                console.log(res);
-                dispatch(
-                    userActions.signup({
-                        email,
-                        nickname,
-                        password,
-                        mbti,
-                        profileImg,
-                    })
-                );
-            })
-            .catch((err) => {
-                console.log(err);
-            });
+        try {
+            await AuthService.register(
+                email,
+                password,
+                nickname,
+                mbti,
+                profileImg
+            );
+            dispatch(
+                userActions.signup({
+                    email,
+                    nickname,
+                    password,
+                    mbti,
+                    profileImg,
+                })
+            );
+        } catch (err) {
+            console.log(err);
+        }
     };
 };
 
@@ -105,16 +97,9 @@ export const signupAxios = (
 export const getProfileDetailsAxios = (token, navigate) => {
     return async function (dispatch) {
         try {
-            const response = await api.get("/players/mypage");
-            const user = {
-                email: response.data.profile.email,
-                nickname: response.data.profile.nickname,
-                profileImg: response.data.profile.profileImg,
-            };
+            const user = await AuthService.getProfileDetails();
 
-            console.log(user);
-
-            dispatch(userActions.getProfileDetails({ user }));
+            dispatch(userActions.getProfileDetails(user));
         } catch (err) {
             console.log(err);
             navigate("/signin");
@@ -125,18 +110,11 @@ export const getProfileDetailsAxios = (token, navigate) => {
 // 프로필 수정
 export const profileUpdatesAxios = (profile, token, navigate) => {
     return async function (dispatch) {
-        let { nickname, profileImg, email } = profile;
-        console.log(nickname, profileImg);
         try {
-            await api.patch("/players/edit", {
-                nickname: nickname,
-                profileImg: profileImg,
-                email: email,
-            });
-
+            await AuthService.updateProfileDetails(profile);
             const user = {
-                nickname: nickname,
-                profileImg: profileImg,
+                nickname: profile.nickname,
+                profileImg: profile.profileImg,
             };
             dispatch(userActions.updateProfile({ user }));
         } catch (err) {
