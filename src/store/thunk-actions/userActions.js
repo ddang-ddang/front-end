@@ -1,6 +1,7 @@
 import { userActions } from "../slices/userSlice";
 import api from "../../modules/api";
 import AuthService from "../../services/auth.service";
+import TokenService from "../../services/token.service";
 
 // 토큰 확인
 export const loginCheckAxios = (token, navigate) => {
@@ -69,26 +70,22 @@ export const signupAxios = (
     navigate
 ) => {
     return async function (dispatch) {
-        try {
-            await AuthService.register(
-                email,
-                password,
-                nickname,
-                mbti,
-                profileImg
-            );
-            dispatch(
-                userActions.signup({
-                    email,
-                    nickname,
-                    password,
-                    mbti,
-                    profileImg,
-                })
-            );
-        } catch (err) {
-            console.log(err);
-        }
+        AuthService.register(email, password, nickname, mbti, profileImg)
+            .then((res) => {
+                console.log(res);
+                dispatch(
+                    userActions.signup({
+                        email,
+                        nickname,
+                        mbti,
+                        profileImg,
+                    })
+                );
+                navigate("/");
+            })
+            .catch((err) => {
+                console.log(err);
+            });
     };
 };
 

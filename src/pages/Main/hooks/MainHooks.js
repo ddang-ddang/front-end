@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getQuestList } from "../../../services/quest.service";
+import { getQuestList } from "../../../services/main.service";
 
 const useMainData = () => {
     const [loading, setLoading] = useState(false);
