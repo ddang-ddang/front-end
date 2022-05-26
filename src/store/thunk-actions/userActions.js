@@ -7,7 +7,17 @@ import TokenService from "../../services/token.service";
 export const loginCheckAxios = (token, navigate) => {
     return async function (dispatch) {
         try {
-            const user = await AuthService.auth();
+            const response = await AuthService.auth();
+            console.log(response);
+            const user = {
+                email: response.data.user.email,
+                nickname: response.data.user.nickname,
+                playerId: response.data.user.playerId,
+                expPoints: response.data.user.expPoints,
+                mbti: response.data.user.mbti,
+                points: response.data.user.points,
+                profileImg: response.data.user.profileImg,
+            };
 
             dispatch(userActions.loginCheck({ user, token }));
         } catch (err) {
@@ -86,21 +96,6 @@ export const signupAxios = (
             .catch((err) => {
                 console.log(err);
             });
-    };
-};
-
-// 유저 프로필 상세 가져오기 (현재: 프로필 추가) + 유효성 검사
-
-export const getProfileDetailsAxios = (token, navigate) => {
-    return async function (dispatch) {
-        try {
-            const user = await AuthService.getProfileDetails();
-
-            dispatch(userActions.getProfileDetails(user));
-        } catch (err) {
-            console.log(err);
-            navigate("/signin");
-        }
     };
 };
 
